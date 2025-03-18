@@ -19,19 +19,28 @@ jobs:
       - name: Call OpenAI API
         run: |
           ISSUE_BODY="${{ github.event.issue.body }}"
-          RESPONSE=$(curl -X POST "https://api.openai.com/v1/chat/completions" \
+          echo "User issue: $ISSUE_BODY"
+          
+          RESPONSE=$(curl -s -X POST "https://api.openai.com/v1/chat/completions" \
           -H "Authorization: Bearer ${{ secrets.OPENAI_API_KEY }}" \
           -H "Content-Type: application/json" \
           -d '{
             "model": "gpt-4",
             "messages": [
               {"role": "system", "content": "You are an AI assistant responding to GitHub Issues."},
-              {"role": "user", "content": "'"$ISSUE_BODY"'"}
+              {"role": "user", "content": "'$ISSUE_BODY'"}
             ]
           }')
-
+          
+          echo "ChatGPT Full Response: $RESPONSE"
+          
           COMMENT_BODY=$(echo $RESPONSE | jq -r '.choices[0].message.content')
 
+          if [ "$COMMENT_BODY" == "null" ] || [ -z "$COMMENT_BODY" ]; then
+            echo "Error: ChatGPT returned a null or empty response. Check API key and request format."
+            exit 1
+          fi
+          
           curl -X POST "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
           -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
           -H "Content-Type: application/json" \
