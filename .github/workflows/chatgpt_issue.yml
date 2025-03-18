@@ -4,6 +4,10 @@ on:
   issues:
     types: [opened]
 
+permissions:
+  issues: write
+  contents: read
+
 jobs:
   chatgpt:
     runs-on: ubuntu-latest
@@ -29,6 +33,6 @@ jobs:
           COMMENT_BODY=$(echo $RESPONSE | jq -r '.choices[0].message.content')
 
           curl -X POST "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
-          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
           -H "Content-Type: application/json" \
           -d "{\"body\": \"$COMMENT_BODY\"}"
